@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+<meta charset="UTF-8">
+<title>DailyUp</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2196f3">
+<style>
+body {
+  font-family: Arial;
+  direction: rtl;
+  background: #f4f8ff;
+  margin: 0;
+}
+header {
+  background: #2196f3;
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+.container {
+  padding: 20px;
+  max-width: 500px;
+  margin: auto;
+}
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 15px;
+  margin-bottom: 15px;
+}
+button {
+  padding: 10px 20px;
+  background: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+}
+.side {
+  position: fixed;
+  left: 10px;
+  top: 100px;
+  background: white;
+  padding: 10px;
+  border-radius: 10px;
+}
+.progress {
+  height: 10px;
+  background: #ddd;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.bar {
+  height: 100%;
+  background: #4caf50;
+  width: 0%;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>DailyUp</h1>
+  <div>נקודות: <span id="points">0</span></div>
+  <div class="progress"><div class="bar" id="bar"></div></div>
+</header>
+
+<div class="side">
+  <div>🏆 רמה: <span id="level">1</span></div>
+  <div>🔥 רצף: <span id="streak">0</span> ימים</div>
+</div>
+
+<div class="container">
+
+  <div class="card">
+    <h3>⏰ הזמן עד האתגר הבא</h3>
+    <p id="countdown">00:00:00</p>
+  </div>
+
+  <div class="card">
+    <h3>אתגר יומי</h3>
+    <p id="challenge1"></p>
+    <button onclick="finish(1)">סיימתי ✔ (+10)</button>
+  </div>
+
+  <div class="card">
+    <h3>אתגר ספורט (בבית)</h3>
+    <p id="challenge2"></p>
+    <button onclick="finish(2)">סיימתי ✔ (+20)</button>
+  </div>
+
+</div>
+
+<script>
+const normalChallenges = [
+  "שתה 6 כוסות מים 💧",
+  "סדר את החדר 🧹",
+  "בלי מסכים 30 דקות 📵",
+  "כתוב מטרה ליום ✍️"
+];
+
+const sportChallenges = [
+  "20 שכיבות סמיכה 💪",
+  "30 סקוואטים 🦵",
+  "פלאנק 30 שניות 🧍",
+  "20 כפיפות בטן"
+];
+
+const today = new Date().toDateString();
+
+let data = JSON.parse(localStorage.getItem("dailyup")) || {
+  points: 0,
+  level: 1,
+  streak: 0,
+  lastDay: "",
+  done1: false,
+  done2: false
+};
+
+document.getElementById("points").innerText = data.points;
+document.getElementById("level").innerText = data.level;
+document.getElementById("streak").innerText = data.streak;
+
+document.getElementById("challenge1").innerText =
+  normalChallenges[new Date().getDate() % normalChallenges.length];
+
+document.getElementById("challenge2").innerText =
+  sportChallenges[new Date().getDate() % sportChallenges.length];
+
+updateBar();
+
+if (data.lastDay === today) {
+  if (data.done1) document.querySelectorAll("button")[0].disabled = true;
+  if (data.done2) document.querySelectorAll("button")[1].disabled = true;
+}
+
+function finish(type) {
+  if (data.lastDay !== today) {
+    if (data.done1 && data.done2) data.streak++;
+    else data.streak = 0;
+    data.done1 = false;
+    data.done2 = false;
+    data.lastDay = today;
+  }
+
+  if (type === 1 && !data.done1) {
+    data.points += 10;
+    data.done1 = true;
+  }
+  if (type === 2 && !data.done2) {
+    data.points += 20;
+    data.done2 = true;
+  }
+
+  data.level = Math.floor(data.points / 100) + 1;
+
+  localStorage.setItem("dailyup", JSON.stringify(data));
+  location.reload();
+}
+
+function updateBar() {
+  let percent = (data.points % 100);
+  document.getElementById("bar").style.width = percent + "%";
+}
+
+// 🕒 קוד השעון
+function updateCountdown() {
+  const now = new Date();
+  const tonight = new Date();
+  tonight.setHours(24,0,0,0);
+  const diff = tonight - now;
+
+  const hours = Math.floor(diff / (1000*60*60));
+  const minutes = Math.floor((diff % (1000*60*60)) / (1000*60));
+  const seconds = Math.floor((diff % (1000*60)) / 1000);
+
+  document.getElementById("countdown").innerText =
+    `${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+
+  if(diff <= 0){
+    data.done1 = false;
+    data.done2 = false;
+    data.lastDay = new Date().toDateString();
+    localStorage.setItem("dailyup", JSON.stringify(data));
+    location.reload();
+  }
+}
+
+setInterval(updateCountdown, 1000);
+updateCountdown();
+</script>
+
+</body>
+</html>
